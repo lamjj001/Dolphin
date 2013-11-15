@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Dolphin</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- main -->
+    <string name="appname">GPS面积测量</string>
+    <string name="startmeasure">开  始  测  量</string>
+    <string name="history">历  史  记  录</string>
+    <string name="set">软  件  设  置</string>
+
+</resources>
