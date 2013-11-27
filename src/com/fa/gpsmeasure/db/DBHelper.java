@@ -73,7 +73,7 @@ public class DBHelper {
 	 */
 	public static class DatabaseHelper extends SQLiteOpenHelper {
 		// 定义数据库文件
-		private static final String DB_NAME = "electronic";
+		private static final String DB_NAME = "GPSDB";
 		// 定义数据库版本
 		private static final int DB_VERSION = 1;
 
@@ -84,112 +84,43 @@ public class DBHelper {
 		@Override
 		public void onOpen(SQLiteDatabase db) {
 			super.onOpen(db);
+			// Enable foreign key constraints
+			db.execSQL("PRAGMA foreign_keys=ON;");
 		}
 
 		@Override
 		public void onCreate(SQLiteDatabase db) {
 
-			createUserTable(db);
-			Log.i("createUserTable--->", "创建 User 表 成功！");
+			createSimpleTable(db);
+			Log.i("createUserTable--->", "创建 simple表 成功！");
 
-			createElectronicTable(db);
-			Log.i("createElectronicTable--->", "创建 Elec 表 成功！");
+			createGeoPointTable(db);
+			Log.i("createElectronicTable--->", "创建geopoint表 成功！");
 
-			createHistoryTable(db);
-			Log.i("createHistoryTable--->", "创建 History 表 成功！");
-
-			createRecommendAppTable(db);
-			Log.i("createRecommendAppTable--->", "创建 RecommendApp 表 成功！");
 		}
 
-		/**
-		 * 
-		 * 创建用户表 包括 / 手机IMEI / 当前软件版本 可用于查询更新 /
-		 */
-		private void createUserTable(SQLiteDatabase db) {
+		private void createSimpleTable(SQLiteDatabase db) {
 			StringBuilder sb = new StringBuilder();
-			sb.append("CREATE TABLE [user] (");
-			sb.append("[IMEI] NVARCHAR(20) PRIMARY KEY NOT NULL DEFAULT ('0') , ");
-			sb.append("[Version] NVARCHAR(10) NOT NULL DEFAULT ('0') , ");
-			sb.append("[AppTime] NVARCHAR(20) NOT NULL DEFAULT ('0') );");
+			sb.append("CREATE TABLE [simple] (");
+			sb.append("[id] INTEGER PRIMARY KEY AUTOINCREMENT ,");
+			sb.append("[name] NVARCHAR(30) NOT NULL ,");
+			sb.append("[area] DOUBLE NOT NULL ,");
+			sb.append("[length] DOUBLE NOT NULL ,");
+			sb.append("[time] datetime default (datetime('now', 'localtime')) ); ");
 
 			db.execSQL(sb.toString());
 		}
 
-		/**
-		 * 
-		 * 创建电子元件表 /
-		 */
-		private void createElectronicTable(SQLiteDatabase db) {
+		private void createGeoPointTable(SQLiteDatabase db) {
 			StringBuilder sb = new StringBuilder();
-			sb.append("CREATE TABLE [electronic] (");
-
-			sb.append("[DocId] INTEGER(11) PRIMARY KEY NOT NULL , ");
-			sb.append("[DocIdFormat] NVARCHAR(6) NOT NULL, ");
-			sb.append("[PartNoName] NVARCHAR(20) NOT NULL, ");
-			sb.append("[Description] NVARCHAR(60) , ");
-			sb.append("[CNDescription] NVARCHAR(60) , ");
-			sb.append("[Manufacturer] NVARCHAR(20) , ");
-			sb.append("[PdfUrl] NVARCHAR(80) , ");
-			sb.append("[Spec] NVARCHAR(400) , ");
-			sb.append("[PartNoImg] NVARCHAR(300) , ");
-
-			sb.append("[Count] INTEGER(8) NOT NULL DEFAULT (1), ");
-			sb.append("[Down] INTEGER(1) NOT NULL DEFAULT (0));");
+			sb.append("CREATE TABLE [geopoint] (");
+			sb.append("[id] INTEGER PRIMARY KEY AUTOINCREMENT,");
+			sb.append("[latitudeE6] INTEGER NOT NULL ,");
+			sb.append("[longitudeE6] INTEGER NOT NULL ,");
+			sb.append("[sid] INTEGER NOT NULL, ");
+			sb.append("foreign key(sid) references simple(id) on delete cascade on update cascade );");
 
 			db.execSQL(sb.toString());
-
-			String sql = "create index searchname on Electronic(PartNoName);";
-
-			db.execSQL(sql);
-		}
-
-		private void createHistoryTable(SQLiteDatabase db) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("CREATE TABLE [history] (");
-			sb.append("[Keyword] NVARCHAR(50) PRIMARY KEY NOT NULL, ");
-			sb.append("[VisitTime] INTEGER(13)) ");
-
-			db.execSQL(sb.toString());
-
-			String sql = "create index searchvisit on history(VisitTime);";
-
-			db.execSQL(sql);
-		}
-
-		// /**
-		// *
-		// * 创建搜索历史表 包括 / ID / 电子元件名称 / 最近查阅日期 /
-		// */
-		// private void createHistoryRecordTable(SQLiteDatabase db) {
-		// StringBuilder sb = new StringBuilder();
-		// sb.append("CREATE TABLE [historyrecord] (");
-		// sb.append("[DocId] INTEGER(11) PRIMARY KEY NOT NULL , ");
-		// sb.append("[DocIdFormat] NVARCHAR(10) NOT NULL, ");
-		// sb.append("[PartNoName] NVARCHAR(20)  NOT NULL, ");
-		// sb.append("[VisitTime] INTEGER(13)) ");
-		//
-		// db.execSQL(sb.toString());
-		//
-		// String sql = "create index searchvisit on historyrecord(VisitTime);";
-		//
-		// db.execSQL(sql);
-		// }
-
-		private void createRecommendAppTable(SQLiteDatabase db) {
-
-			StringBuilder sb = new StringBuilder();
-			sb.append("CREATE TABLE [recommendapp] (");
-			sb.append("[Id] INTEGER(8) PRIMARY KEY NOT NULL , ");
-			sb.append("[Name] NVARCHAR(30) NOT NULL, ");
-			sb.append("[ImgUrl] NVARCHAR(80)  NOT NULL, ");
-			sb.append("[DownUrl] NVARCHAR(80) ); ");
-
-			db.execSQL(sb.toString());
-
-			String sql = "create index searchimg on recommendapp(ImgUrl);";
-
-			db.execSQL(sql);
 		}
 
 		/**
@@ -209,17 +140,12 @@ public class DBHelper {
 		 */
 		private void DropTable(SQLiteDatabase db) {
 
-			String str = "DROP TABLE IF EXISTS recommendapp ;";
+			String str = "DROP TABLE IF EXISTS geopoint ;";
 			db.execSQL(str);
 
-			str = "DROP TABLE IF EXISTS history ;";
+			str = "DROP TABLE IF EXISTS simple ;";
 			db.execSQL(str);
 
-			str = "DROP TABLE IF EXISTS electronic ;";
-			db.execSQL(str);
-
-			str = "DROP TABLE IF EXISTS user ;";
-			db.execSQL(str);
 		}
 
 		/**
@@ -230,10 +156,8 @@ public class DBHelper {
 		public static void ClearData(Context context) {
 			DatabaseHelper dbHelper = new DBHelper.DatabaseHelper(context);
 			SQLiteDatabase db = dbHelper.getWritableDatabase();
-			db.execSQL("DELETE FROM recommendapp");// 清空recommendapp表
-			db.execSQL("DELETE FROM history");// 清空History 表
-			db.execSQL("DELETE FROM electronic");// 清空Electronic表
-			db.execSQL("DELETE FROM user");// 清空User表
+			db.execSQL("DELETE FROM geopoint");
+			db.execSQL("DELETE FROM simple");
 
 			dbHelper.close();
 		}

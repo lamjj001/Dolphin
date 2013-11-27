@@ -3,11 +3,63 @@
 
     <string name="app_name">Dolphin</string>
     <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_measure">MeasureActivity</string>
+    <string name="title_activity_history">HistoryActivity</string>
+    <string name="title_activity_set">SetActivity</string>
+    <string name="title_activity_review">ReviewActivity</string>
 
     <!-- main -->
     <string name="appname">GPS面积测量</string>
     <string name="startmeasure">开  始  测  量</string>
     <string name="history">历  史  记  录</string>
     <string name="set">软  件  设  置</string>
+    <string name="exit">退出</string>
+
+    <!-- measure activity -->
+    <string name="distance">距离: 0 m</string>
+    <string name="area">面积: 0 m\u00b2</string>
+    <string name="meter">m</string>
+    <string name="square_meter">m\u00b2</string>
+
+    <!-- measure -->
+    <string name="icon">+</string>
+    <string name="automark">自动标记</string>
+    <string name="manumark">手动标记</string>
+    <string name="start">开始</string>
+    <string name="save">保存</string>
+    <string name="reset">重置</string>
+    <string name="stop">停止</string>
+    <string name="mark">标记</string>
+    <string name="gpsservice">GPS服务</string>
+    <string name="gpsin">GPS连接信号恢复</string>
+    <string name="gpsout">GPS连接信号中断</string>
+    <string name="gpsmsg">尚未开启GPS定位服务,请启动定位服务</string>
+    <string name="gpswarning">未开启定位服务,无法使用测量功能!</string>
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+
+    <!-- set -->
+    <string name="settitle">软件设置</string>
+    <string name="logmode">测量方式</string>
+    <string name="help">使用说明</string>
+    <string name="about">关于</string>
+
+    <!-- history -->
+    <string name="historytitle">历史记录</string>
+    <string name="nohistory">暂无历史记录</string>
+
+    <!-- Help info -->
+    <string name="help_a">1.请在户外使用以确保您的手机能够接收到卫星定位信号，在手机接收到较为稳定的卫星信号之前可能需要一段时间</string>
+    <string name="help_b">2.使用自动标记方式，请于测量起点处点击开始按钮，结束时点击停止按钮</string>
+    <string name="help_c">3.使用手动标记方式，请于测量起点处点击标记，此后每到达多边形的一个拐点点一次标记</string>
+    <string name="help_d">4.由于GPS存在定位误差，测量较小的区域误差较大，随着所测区域面积增大测量精度增加</string>
+    <string name="help_e">5.测量完毕后可对本次测量样本进行保存，方便以后查看</string>
+
+    <!-- About content -->
+    <string name="about_a">*******************************</string>
+    <string name="about_b">GPS面积测量</string>
+    <string name="about_c">版本: 1.0</string>
+    <string name="about_d">邮箱: pengfei9176@163.com</string>
 
 </resources>
