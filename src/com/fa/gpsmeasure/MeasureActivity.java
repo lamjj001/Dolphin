@@ -8,6 +8,7 @@ import java.util.TimerTask;
 import com.fa.gpsmeasure.bean.Simple;
 import com.fa.gpsmeasure.db.GeoPointHelper;
 import com.fa.gpsmeasure.db.SimpleHelper;
+import com.fa.gpsmeasure.util.NetworkDetector;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
@@ -94,6 +95,7 @@ public class MeasureActivity extends MapActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_measure);
 
+		testNetWork();
 		checkGPS();
 
 		matrix = new Matrix();
@@ -121,7 +123,7 @@ public class MeasureActivity extends MapActivity {
 		if (timer == null) {
 			createTimerTask();
 			timer = new Timer();
-			timer.schedule(task, 3000, 30000);
+			timer.schedule(task, 3000, 10000);
 		}
 	}
 
@@ -231,6 +233,14 @@ public class MeasureActivity extends MapActivity {
 		sensorManager.registerListener(new CompassSensorEventListener(),
 				sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
 				SensorManager.SENSOR_DELAY_GAME);
+	}
+
+	private void testNetWork() {
+		if (!NetworkDetector.detect(this)) {
+			Toast.makeText(getApplicationContext(), "请检查网络链接",
+					Toast.LENGTH_LONG).show();
+			finish();
+		}
 	}
 
 	private void checkGPS() {
