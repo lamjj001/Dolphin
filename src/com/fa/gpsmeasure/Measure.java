@@ -1,8 +1,13 @@
 package com.fa.gpsmeasure;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import com.fa.gpsmeasure.bean.FlatCoordinate;
+import com.fa.gpsmeasure.bean.GPSCoordinate;
 import com.fa.gpsmeasure.bean.Simple;
 import com.fa.gpsmeasure.util.CoordConvert;
+import com.fa.gpsmeasure.util.NetworkListener;
 import com.google.android.maps.GeoPoint;
 
 import android.annotation.SuppressLint;
@@ -16,10 +21,10 @@ import android.widget.Toast;
 
 public class Measure {
 
-	private static int WAVE = 2;
-
 	public static final int LOGGING_MODE_AUTO = 0;
 	public static final int LOGGING_MODE_MANUAL = 1;
+
+	private static final String queueNotNull = "s";
 
 	Context context;
 	Handler mHandler;
@@ -27,24 +32,21 @@ public class Measure {
 
 	private int loggingMode;
 
-	private boolean needCorrect;
+	private static boolean needCorrect;
+
+	private static boolean centerPlaced;
 
 	LocationManager locationManager;
 	GPSLocationListener gps;
 
-	private static double longitude = 0;
-	private static double latitude = 0;
-	private static double altitude = 0;
-
-	private int transLatE6 = 0;
-	private int transLonE6 = 0;
-
 	private double lastLon = 0;
 	private double lastLat = 0;
 
-	public GeoPoint geoPoint;
+	static Queue<GPSCoordinate> points = new LinkedList<GPSCoordinate>();
+	static Queue<FlatCoordinate> coordinates = new LinkedList<FlatCoordinate>();
 
-	private boolean centerPlaced;
+	public GeoPoint geoPoint;
+	FlatCoordinate flatCoordinate;
 
 	public Measure(Context context, Handler mHandler) {
 		this.context = context;
@@ -55,21 +57,22 @@ public class Measure {
 		locationManager = (LocationManager) context
 				.getSystemService(Context.LOCATION_SERVICE);
 		gps = new GPSLocationListener();
+
 	}
 
-	public void onResume() {
+	public void onStart() {
 		needCorrect = true;
 		centerPlaced = false;
+		gps.clearState();
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
 				1000, 1.0f, gps);
 
+		Thread worker = new Thread(new Worker());
+		worker.start();
 	}
 
-	public void onDestroy() {
-		locationManager.removeUpdates(gps);
-	}
-
-	public void onPause() {
+	public void onStop() {
+		gps.clearState();
 		locationManager.removeUpdates(gps);
 	}
 
@@ -116,8 +119,16 @@ public class Measure {
 	}
 
 	public void reset() {
-		setSimple(new Simple());
+
 		gps.reset();
+		gps.clearState();
+		points.clear();
+		coordinates.clear();
+		geoPoint = null;
+		flatCoordinate = null;
+		setNeedCorrect();
+		setSimple(new Simple());
+
 	}
 
 	public void stop() {
@@ -126,12 +137,9 @@ public class Measure {
 
 	public void importFromGPS() {
 		gps.ensureOrigoIsFixed();
-		simple.addVertex(new FlatCoordinate(gps.flatCoordinate.x,
-				gps.flatCoordinate.y), geoPoint);
-		update();
-	}
-
-	public void update() {
+		if (flatCoordinate != null && geoPoint != null) {
+			simple.addVertex(flatCoordinate, geoPoint);
+		}
 		mHandler.sendEmptyMessage(0x11);
 	}
 
@@ -146,13 +154,11 @@ public class Measure {
 		private double flatYUnitY;
 		private double flatYUnitZ;
 
-		public FlatCoordinate flatCoordinate;
 		private boolean origoIsFixed;
 		private boolean hasRecievedSignal;
 		private boolean isStarted;
 
 		public GPSLocationListener() {
-			flatCoordinate = new FlatCoordinate(0.0D, 0.0D);
 			origoIsFixed = false;
 			hasRecievedSignal = false;
 			isStarted = false;
@@ -162,26 +168,9 @@ public class Measure {
 		public void onLocationChanged(Location location) {
 			// TODO Auto-generated method stub
 
-			if (WAVE > 0 || (transLatE6 == 0 && transLonE6 == 0)) {
-				WAVE--;
-
-				double lat = location.getLatitude();
-				double lon = location.getLongitude();
-				GeoPoint gp = CoordConvert.parseGoogle(lon, lat);
-
-				if (gp != null) {
-					transLatE6 = (int) (gp.getLatitudeE6() - lat * 1E6);
-					transLonE6 = (int) (gp.getLongitudeE6() - lon * 1E6);
-
-				}
-				return;
-			}
-
-			hasRecievedSignal = true;
-
-			longitude = location.getLongitude();// ||
-			latitude = location.getLatitude();// ----
-			altitude = location.getAltitude();// Height
+			double longitude = location.getLongitude();// ||
+			double latitude = location.getLatitude();// ----
+			double altitude = location.getAltitude();// Height
 
 			if (Math.abs((latitude - lastLat) * 1E6) > 1600
 					|| Math.abs((longitude - lastLon) * 1E6) > 1600) {
@@ -220,36 +209,13 @@ public class Measure {
 			double spaceZ = (radiusEarth + altitude)
 					* Math.sin(latitude * Math.PI / 180);
 
-			flatCoordinate.x = spaceX * flatXUnitX + spaceY * flatXUnitY
-					+ spaceZ * flatXUnitZ;
-			flatCoordinate.y = spaceX * flatYUnitX + spaceY * flatYUnitY
-					+ spaceZ * flatYUnitZ;
+			coordinates.add(new FlatCoordinate(spaceX * flatXUnitX + spaceY
+					* flatXUnitY + spaceZ * flatXUnitZ, spaceX * flatYUnitX
+					+ spaceY * flatYUnitY + spaceZ * flatYUnitZ));
+			points.add(new GPSCoordinate(latitude, longitude, altitude));
 
-			if (needCorrect) {
-				GeoPoint gp = CoordConvert.parseGoogle(longitude, latitude);
-				if (gp != null) {
-					transLatE6 = (int) (gp.getLatitudeE6() - latitude * 1E6);
-					transLonE6 = (int) (gp.getLongitudeE6() - longitude * 1E6);
-
-					lastLat = latitude;
-					lastLon = longitude;
-
-					needCorrect = false;
-				}
-			}
-
-			geoPoint = new GeoPoint((int) (latitude * 1E6 + transLatE6),
-					(int) (longitude * 1E6 + transLonE6));
-
-			if (centerPlaced == false) {
-
-				mHandler.sendEmptyMessage(0x12);
-
-				centerPlaced = true;
-			}
-
-			if (loggingMode == LOGGING_MODE_AUTO && isStarted) {
-				importFromGPS();
+			synchronized (queueNotNull) {
+				queueNotNull.notify();
 			}
 		}
 
@@ -257,14 +223,14 @@ public class Measure {
 		@Override
 		public void onProviderDisabled(String provider) {
 			// TODO Auto-generated method stub
-			Toast.makeText(context, R.string.gpsout, Toast.LENGTH_LONG);
+			Toast.makeText(context, R.string.gpsout, Toast.LENGTH_LONG).show();
 		}
 
 		@SuppressLint("ShowToast")
 		@Override
 		public void onProviderEnabled(String provider) {
 			// TODO Auto-generated method stub
-			Toast.makeText(context, R.string.gpsin, Toast.LENGTH_LONG);
+			Toast.makeText(context, R.string.gpsin, Toast.LENGTH_LONG).show();
 		}
 
 		@Override
@@ -289,9 +255,119 @@ public class Measure {
 			return hasRecievedSignal;
 		}
 
+		public void clearState() {
+			hasRecievedSignal = false;
+		}
+
+		public void setState() {
+			hasRecievedSignal = true;
+		}
+
 		public void ensureOrigoIsFixed() {
-			if (!origoIsFixed) {
-				origoIsFixed = true;
+			// if (!origoIsFixed)
+			origoIsFixed = true;
+		}
+	}
+
+	private class Worker implements Runnable {
+		public static final String networkFinish = "s0";
+
+		private double longitude;
+		private double latitude;
+
+		private int transLatE6 = 0;
+		private int transLonE6 = 0;
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+
+			while (true) {
+
+				while (points.isEmpty()) {
+					synchronized (queueNotNull) {
+						try {
+							queueNotNull.notify();
+							queueNotNull.wait();
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+
+				if (!points.isEmpty()) {
+
+					try {
+
+						flatCoordinate = coordinates.poll();
+						GPSCoordinate gpsCoordinate = points.poll();
+						latitude = gpsCoordinate.latitude;
+						longitude = gpsCoordinate.longitude;
+
+						if (needCorrect) {
+							synchronized (networkFinish) {
+								CoordConvert.parseGoogle(longitude, latitude,
+										new NetworkListener() {
+
+											@Override
+											public void onFinish(GeoPoint geoPt) {
+												// TODO Auto-generated method
+												// stub
+												synchronized (networkFinish) {
+													geoPoint = geoPt;
+
+													transLatE6 = (int) (geoPoint
+															.getLatitudeE6() - latitude * 1E6);
+													transLonE6 = (int) (geoPoint
+															.getLongitudeE6() - longitude * 1E6);
+
+													lastLat = latitude;
+													lastLon = longitude;
+
+													needCorrect = false;
+
+													gps.setState();
+
+													networkFinish.notify();
+												}
+											}
+
+											@Override
+											public void onError() {
+												// TODO Auto-generated method
+												// stub
+												synchronized (networkFinish) {
+													geoPoint = new GeoPoint(
+															(int) (latitude * 1E6 + transLatE6),
+															(int) (longitude * 1E6 + transLonE6));
+													networkFinish.notify();
+												}
+											}
+										});
+								networkFinish.notify();
+								networkFinish.wait();
+							}
+						} else {
+							geoPoint = new GeoPoint(
+									(int) (latitude * 1E6 + transLatE6),
+									(int) (longitude * 1E6 + transLonE6));
+						}
+
+						if (centerPlaced == false) {
+							mHandler.sendEmptyMessage(0x12);
+							centerPlaced = true;
+						}
+						
+						if (loggingMode == LOGGING_MODE_AUTO && isRunning()) {
+							importFromGPS();
+						}
+						mHandler.sendEmptyMessage(0x14);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 	}

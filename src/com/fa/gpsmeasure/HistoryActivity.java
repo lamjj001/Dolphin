@@ -35,20 +35,20 @@ public class HistoryActivity extends Activity {
 		setContentView(R.layout.activity_history);
 
 		listView = (ListView) findViewById(R.id.simpleList);
+		widgetInit();
+		new LoadSimplesTask().execute("");
 	}
 
 	@Override
 	protected void onStart() {
 		// TODO Auto-generated method stub
 		super.onStart();
-		widgetInit();
 	}
 
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
 		super.onResume();
-		new LoadSimplesTask().execute("");
 	}
 
 	private void widgetInit() {
@@ -158,23 +158,37 @@ public class HistoryActivity extends Activity {
 		@Override
 		public View getView(int position, View view, ViewGroup parent) {
 			// TODO Auto-generated method stub
+			ViewHolder viewHolder = null;
 			if (view == null) {
 				view = getLayoutInflater().inflate(R.layout.simple_item, null);
-			}
-			TextView name = (TextView) view.findViewById(R.id.name);
-			TextView area = (TextView) view.findViewById(R.id.area);
-			TextView distance = (TextView) view.findViewById(R.id.distance);
-			TextView time = (TextView) view.findViewById(R.id.time);
 
-			name.setText(list.get(position).getName());
-			area.setText("面积: " + df.format(list.get(position).getArea())
-					+ " m\u00b2");
-			distance.setText("距离: " + df.format(list.get(position).getLength())
-					+ " m");
-			time.setText(list.get(position).getTime());
+				viewHolder = new ViewHolder();
+				viewHolder.name = (TextView) view.findViewById(R.id.name);
+				viewHolder.area = (TextView) view.findViewById(R.id.area);
+				viewHolder.distance = (TextView) view
+						.findViewById(R.id.distance);
+				viewHolder.time = (TextView) view.findViewById(R.id.time);
+
+				view.setTag(viewHolder);
+			} else {
+				viewHolder = (ViewHolder) view.getTag();
+			}
+
+			viewHolder.name.setText(list.get(position).getName());
+			viewHolder.area.setText("面积: "
+					+ df.format(list.get(position).getArea()) + " m\u00b2");
+			viewHolder.distance.setText("距离: "
+					+ df.format(list.get(position).getLength()) + " m");
+			viewHolder.time.setText(list.get(position).getTime());
 
 			return view;
 		}
+	}
 
+	final class ViewHolder {
+		TextView name;
+		TextView area;
+		TextView distance;
+		TextView time;
 	}
 }

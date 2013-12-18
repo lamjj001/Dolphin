@@ -3,9 +3,14 @@ package com.fa.gpsmeasure;
 import com.fa.gpsmeasure.db.DBHelper;
 import com.fa.gpsmeasure.util.NetworkDetector;
 
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +24,7 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		new CreateDBTask().execute("");
 	}
 
 	@Override
@@ -32,7 +38,6 @@ public class MainActivity extends Activity {
 	protected void onResume() {
 		// TODO Auto-generated method stub
 		super.onResume();
-		new CreateDBTask().execute("");
 	}
 
 	@Override
@@ -49,7 +54,42 @@ public class MainActivity extends Activity {
 	}
 
 	public void startMeasure(View view) {
-		startActivity(new Intent(MainActivity.this, MeasureActivity.class));
+		if (!NetworkDetector.detect(this)) {
+			Toast.makeText(getApplicationContext(), "请检查网络链接",
+					Toast.LENGTH_LONG).show();
+			return;
+		}
+
+		LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+
+			new AlertDialog.Builder(MainActivity.this)
+					.setTitle(R.string.gpsservice)
+					.setMessage(R.string.gpsmsg)
+					.setCancelable(false)
+					.setPositiveButton(R.string.ok,
+							new DialogInterface.OnClickListener() {
+
+								public void onClick(DialogInterface dialog,
+										int which) {
+									MainActivity.this
+											.startActivity(new Intent(
+													Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+								}
+							})
+					.setNegativeButton(R.string.cancel,
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int which) {
+									Toast.makeText(getApplicationContext(),
+											R.string.gpswarning,
+											Toast.LENGTH_LONG).show();
+								}
+							}).show();
+
+		} else {
+			startActivity(new Intent(MainActivity.this, MeasureActivity.class));
+		}
 	}
 
 	public void startHistory(View view) {

@@ -8,7 +8,6 @@ import com.loopj.android.http.JsonHttpResponseHandler;
 
 public class CoordConvert {
 
-	private static GeoPoint geoPoint = null;
 	private static AsyncHttpClient client = new AsyncHttpClient();
 
 	/**
@@ -19,7 +18,8 @@ public class CoordConvert {
 	 * @param latitude
 	 *            GPS 纬度
 	 */
-	public static GeoPoint parseGoogle(double longitude, double latitude) {
+	public static void parseGoogle(double longitude, double latitude,
+			final NetworkListener listener) {
 
 		StringBuilder sb = new StringBuilder(
 				"http://123.125.115.154/ag/coord/convert?from=0&to=2&x=");
@@ -41,20 +41,26 @@ public class CoordConvert {
 							.getString("y")));
 
 					if ("0".equals(object.getString("error"))) {
-						geoPoint = new GeoPoint((int) (lat1 * 1E6),
-								(int) (lon1 * 1E6));
+						listener.onFinish(new GeoPoint((int) (lat1 * 1E6),
+								(int) (lon1 * 1E6)));
 					}
 
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					listener.onError();
 				}
 
 			}
 
-		});
+			@Override
+			public void onFailure(Throwable arg0, JSONObject arg1) {
+				// TODO Auto-generated method stub
+				super.onFailure(arg0, arg1);
+				listener.onError();
+			}
 
-		return geoPoint;
+		});
 
 	}
 }

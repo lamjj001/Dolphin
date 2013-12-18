@@ -67,7 +67,6 @@ public class MeasureActivity extends MapActivity {
 	Paint closelinePaint;
 	Paint paint;
 	Paint origoPaint;
-	Paint txtPaint;
 
 	// overlay
 	CenterOverLay centerOverLay;
@@ -95,30 +94,26 @@ public class MeasureActivity extends MapActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_measure);
 
-		testNetWork();
-		checkGPS();
-
 		matrix = new Matrix();
 		measure = new Measure(this, mHandler);
 
 		sp = getSharedPreferences("setinfo", Context.MODE_PRIVATE);
+
+		widgetInit();
+		mapInit();
 	}
 
 	@Override
 	protected void onStart() {
 		// TODO Auto-generated method stub
 		super.onStart();
-		paintInit();
-		mapInit();
-	}
 
-	@Override
-	protected void onResume() {
-		// TODO Auto-generated method stub
-		super.onResume();
+		testNetWork();
+		checkGPS();
+
+		paintInit();
 		compassInit();
-		widgetInit();
-		measure.onResume();
+		measure.onStart();
 
 		if (timer == null) {
 			createTimerTask();
@@ -128,14 +123,16 @@ public class MeasureActivity extends MapActivity {
 	}
 
 	@Override
+	protected void onResume() {
+		// TODO Auto-generated method stub
+		super.onResume();
+
+	}
+
+	@Override
 	protected void onPause() {
 		// TODO Auto-generated method stub
 		super.onPause();
-		measure.onPause();
-		if (timer != null) {
-			timer.cancel();
-			timer = null;
-		}
 	}
 
 	@Override
@@ -146,17 +143,13 @@ public class MeasureActivity extends MapActivity {
 			timer.purge();
 			timer = null;
 		}
+		measure.onStop();
 	}
 
 	@Override
 	protected void onDestroy() {
 		// TODO Auto-generated method stub
 		super.onDestroy();
-		measure.onDestroy();
-		if (timer != null) {
-			timer.cancel();
-			timer = null;
-		}
 	}
 
 	@Override
@@ -166,7 +159,9 @@ public class MeasureActivity extends MapActivity {
 	}
 
 	private void paintInit() {
-		this.linePaint = new Paint();
+		if (linePaint == null) {
+			linePaint = new Paint();
+		}
 		linePaint.setColor(Color.argb(192, 0x78, 0xba, 0));
 		linePaint.setAntiAlias(true);
 		linePaint.setDither(true);
@@ -175,7 +170,9 @@ public class MeasureActivity extends MapActivity {
 		linePaint.setStrokeCap(Paint.Cap.ROUND);
 		linePaint.setStrokeWidth(3);
 
-		this.closelinePaint = new Paint();
+		if (closelinePaint == null) {
+			closelinePaint = new Paint();
+		}
 		closelinePaint.setColor(Color.argb(128, 0, 0x72, 0xc6));
 		closelinePaint.setAntiAlias(true);
 		closelinePaint.setDither(true);
@@ -184,7 +181,9 @@ public class MeasureActivity extends MapActivity {
 		closelinePaint.setStrokeCap(Paint.Cap.ROUND);
 		closelinePaint.setStrokeWidth(3);
 
-		this.paint = new Paint();
+		if (paint == null) {
+			paint = new Paint();
+		}
 		paint.setColor(Color.argb(96, 0xff, 0xff, 0));
 		paint.setAntiAlias(true);
 		paint.setDither(true);
@@ -192,40 +191,43 @@ public class MeasureActivity extends MapActivity {
 		paint.setStrokeJoin(Paint.Join.ROUND);
 		paint.setStrokeCap(Paint.Cap.ROUND);
 
-		origoPaint = new Paint();
+		if (origoPaint == null) {
+			origoPaint = new Paint();
+		}
 		origoPaint.setColor(Color.argb(192, 0xae, 0x11, 0x3d));
 		origoPaint.setAntiAlias(true);
 		origoPaint.setStyle(Paint.Style.STROKE);
-
-		txtPaint = new Paint();
-		txtPaint.setColor(0xae113d);
-		txtPaint.setAlpha(192);
-		txtPaint.setTextSize(25);
-		txtPaint.setAntiAlias(true);
 	}
 
 	private void mapInit() {
 		// 获得界面上MapView对象
-		mapView = (MapView) findViewById(R.id.mv);
+		if (mapView == null) {
+			mapView = (MapView) findViewById(R.id.mv);
+			// 设置显示放大、缩小的按钮
+			mapView.setBuiltInZoomControls(true);
+			// 创建MapController对象
+			controller = mapView.getController();
+			controller.setZoom(18);
 
-		// 设置显示放大、缩小的按钮
-		mapView.setBuiltInZoomControls(true);
-		// 创建MapController对象
-		controller = mapView.getController();
-		controller.setZoom(18);
+			mapOverlays = mapView.getOverlays();
 
-		mapOverlays = mapView.getOverlays();
-
-		posBitmap = BitmapFactory.decodeResource(getResources(),
-				R.drawable.center_overlay);
+		}
+		if (posBitmap == null) {
+			posBitmap = BitmapFactory.decodeResource(getResources(),
+					R.drawable.center_overlay);
+		}
 	}
 
 	private void compassInit() {
-		compassImage = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(
-				getResources(), R.drawable.compass_needle), 99, 99, true);
 
-		imageWidth = compassImage.getWidth();
-		imageHeight = compassImage.getHeight();
+		if (compassImage == null) {
+			compassImage = Bitmap.createScaledBitmap(BitmapFactory
+					.decodeResource(getResources(), R.drawable.compass_needle),
+					99, 99, true);
+
+			imageWidth = compassImage.getWidth();
+			imageHeight = compassImage.getHeight();
+		}
 
 		sensorManager = (SensorManager) MeasureActivity.this
 				.getSystemService(Context.SENSOR_SERVICE);
@@ -239,7 +241,6 @@ public class MeasureActivity extends MapActivity {
 		if (!NetworkDetector.detect(this)) {
 			Toast.makeText(getApplicationContext(), "请检查网络链接",
 					Toast.LENGTH_LONG).show();
-			finish();
 		}
 	}
 
@@ -287,6 +288,7 @@ public class MeasureActivity extends MapActivity {
 		if ("MANUAL".equals(sp.getString("logmode", "AUTO"))) {
 			logmode.setText(R.string.manumark);
 			measure.setLoggingManual();
+			startButton.setText(R.string.mark);
 			startButton.setOnClickListener(new OnClickListener() {
 
 				@Override
@@ -400,13 +402,6 @@ public class MeasureActivity extends MapActivity {
 			pathOverlay = new PathOverlay();
 			mapOverlays.add(pathOverlay);
 		}
-		if (centerOverLay != null) {
-			mapOverlays.remove(centerOverLay);
-		}
-		if (measure.geoPoint != null) {
-			centerOverLay = new CenterOverLay();
-			mapOverlays.add(centerOverLay);
-		}
 
 		mapView.invalidate();
 
@@ -416,15 +411,19 @@ public class MeasureActivity extends MapActivity {
 				+ " m\u00b2");
 	}
 
-	private void animateToCenter() {
+	private void updateCenter() {
 		if (measure.geoPoint != null) {
 			if (centerOverLay != null) {
 				mapOverlays.remove(centerOverLay);
 			}
-			if (measure.geoPoint != null) {
-				centerOverLay = new CenterOverLay();
-				mapOverlays.add(centerOverLay);
-			}
+			centerOverLay = new CenterOverLay();
+			mapOverlays.add(centerOverLay);
+			mapView.invalidate();
+		}
+	}
+
+	private void animateToCenter() {
+		if (measure.geoPoint != null) {
 			controller.animateTo(measure.geoPoint);
 			mapView.invalidate();
 		}
@@ -598,6 +597,9 @@ public class MeasureActivity extends MapActivity {
 				animateToCenter();
 				break;
 
+			case 0x14:
+				updateCenter();
+				break;
 			default:
 				break;
 			}

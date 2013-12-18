@@ -38,7 +38,6 @@ public class ReviewActivity extends MapActivity {
 	Paint closelinePaint;
 	Paint paint;
 	Paint origoPaint;
-	Paint txtPaint;
 
 	// overlay
 	PathOverlay pathOverlay;
@@ -60,21 +59,22 @@ public class ReviewActivity extends MapActivity {
 		area = getIntent().getExtras().getDouble("area");
 
 		widgetInit();
+
+		paintInit();
+		mapInit();
+		new LoadPointsTask().execute(id);
 	}
 
 	@Override
 	protected void onStart() {
 		// TODO Auto-generated method stub
 		super.onStart();
-		paintInit();
-		mapInit();
 	}
 
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
 		super.onResume();
-		new LoadPointsTask().execute(id);
 	}
 
 	@Override
@@ -115,11 +115,6 @@ public class ReviewActivity extends MapActivity {
 		origoPaint.setAntiAlias(true);
 		origoPaint.setStyle(Paint.Style.STROKE);
 
-		txtPaint = new Paint();
-		txtPaint.setColor(0xae113d);
-		txtPaint.setAlpha(192);
-		txtPaint.setTextSize(25);
-		txtPaint.setAntiAlias(true);
 	}
 
 	private void mapInit() {
@@ -166,6 +161,10 @@ public class ReviewActivity extends MapActivity {
 			// TODO Auto-generated method stub
 			super.onPostExecute(result);
 			if (points != null) {
+				GeoPoint geoPoint = points.get(0);
+				if (geoPoint != null) {
+					controller.animateTo(geoPoint);
+				}
 				pathOverlay = new PathOverlay();
 				mapOverlays.add(pathOverlay);
 			}

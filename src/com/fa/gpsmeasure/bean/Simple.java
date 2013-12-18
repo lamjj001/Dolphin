@@ -15,9 +15,10 @@ public class Simple {
 	private Vector<FlatCoordinate> flatVertices;
 	private Vector<GeoPoint> googleVertices;
 
-	private static int lastPointUsedForMeasure = 0;
+	private int lastPointUsedForMeasure;
 
 	public Simple() {
+		lastPointUsedForMeasure = 0;
 		this.flatVertices = new Vector<FlatCoordinate>();
 		this.googleVertices = new Vector<GeoPoint>();
 	}
